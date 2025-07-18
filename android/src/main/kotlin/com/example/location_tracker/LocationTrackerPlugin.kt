@@ -23,49 +23,41 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler {
     channel.setMethodCallHandler(this)
   }
 
-  // TODOS: 
-  // - Gracefully shutdown when a permission is disabled / location service disabled
-  // - Ask for permissions within the plugin, when starting the plugin (and redirect to proper page if possible)
-  // - Only use useful logs for more battery economy
-  // - Pass parameters as arguments (refresh time, distance, accuracy, notification title, notification content)
-  // - Decide what to do with the locations? is a stream the best option? Is there another way to save battery to the max??
-
   override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
     when (call.method) {
-      
-      "startService" -> {
-        println("[LocationTrackerPlugin] Starting service...")
-        val intent = Intent(context, LocationService::class.java)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-          println("[LocationTrackerPlugin] context.startForegroundService...")
-          context.startForegroundService(intent)
-        } else {
-          println("[LocationTrackerPlugin] context.startService...")
-          context.startService(intent)
-        }
-        result.success(null)
-      }
-
-      "stopService" -> {
-        println("[LocationTrackerPlugin] Stopping service...")
-        val intent = Intent(context, LocationService::class.java)
-        context.stopService(intent)
-        result.success(null)
-      }
-
-      "getLogs" -> {
-        println("[LocationTrackerPlugin] Getting logs...")
-        try {
-            Logger.init(context)
-            val jsonLogs = Logger.getLogs()
-            result.success(jsonLogs)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            result.success("[]")
-        }
-      }
-
+      "startService" -> startService(result)
+      "stopService" -> stopService(result)
+      "getLogs" -> getLogs(result)
       else -> result.notImplemented()
+    }
+  }
+
+  private fun startService(result: Result) {
+    println("[LocationTrackerPlugin] Starting service...")
+    val intent = Intent(context, LocationService::class.java)
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      context.startForegroundService(intent)
+    } else {
+      context.startService(intent)
+    }
+    result.success(null)
+  }
+
+  private fun stopService(result: Result) {
+    println("[LocationTrackerPlugin] Stopping service...")
+    val intent = Intent(context, LocationService::class.java)
+    context.stopService(intent)
+    result.success(null)
+  }
+
+  private fun getLogs(result: Result) {
+    try {
+      Logger.init(context)
+      val jsonLogs = Logger.getLogs()
+      result.success(jsonLogs)
+    } catch (e: Exception) {
+      e.printStackTrace()
+      result.success("[]")
     }
   }
 

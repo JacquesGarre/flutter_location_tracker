@@ -71,6 +71,6 @@ The plugin will log in shared preferences every change of activity (along with t
 ## Todos
 - Gracefully shutdown the service when any permission gets disabled or if the location service gets disabled
 - Generate a stream to listen to location changes from flutter app
-- Ask for permissions directly within the plugin, when starting the service (and redirect to proper permission page if possible, for less user confusion)
+- Add methods to open proper permissions pages (if possible)
 - Pass parameters as arguments of the plugin (tracking profiles related to activity, notification title, notification content, etc...) so it can be configured from the flutter app
 - Keep only use useful logs to save more battery
