@@ -27,7 +27,7 @@ class LocationService : Service() {
   private val handler = android.os.Handler(Looper.getMainLooper())
   private val heartbeatLogger = object : Runnable {
       override fun run() {
-          handler.postDelayed(this, 120000) // every 120 seconds // TODO: Make it as a parameter
+          handler.postDelayed(this, 120000L) // every 120 seconds // TODO: Make it as a parameter
       }
   }
 
