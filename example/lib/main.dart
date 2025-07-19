@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:location_tracker/location_tracker.dart';
-import 'package:permission_handler/permission_handler.dart';
 
 void main() {
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -24,54 +23,55 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   List<String> _logs = [];
+  bool _locationPermissionAlwaysGranted = false;
+  bool _notificationPermissionGranted = false;
+  bool _activityRecognitionPermissionGranted = false;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _refresh();
   }
 
-  Future<void> requestPermissions() async {
-    await [
-      Permission.location,
-      Permission.locationAlways,
-      Permission.locationWhenInUse,
-      Permission.notification,
-      Permission.activityRecognition,
-    ].request();
+  Future<void> refreshPermissions() async {
+    final locationPermissionAlwaysGranted = await LocationTracker.isLocationPermissionAlwaysGranted();
+    final notificationPermissionGranted = await LocationTracker.isNotificationPermissionGranted();
+    final activityRecognitionPermissionGranted = await LocationTracker.isActivityRecognitionPermissionGranted();
+    setState(() {
+      _locationPermissionAlwaysGranted = locationPermissionAlwaysGranted;
+      _notificationPermissionGranted = notificationPermissionGranted;
+      _activityRecognitionPermissionGranted =
+          activityRecognitionPermissionGranted;
+    });
   }
 
   Future<void> _startTracking() async {
     debugPrint("_startTracking");
-    final locationPermissionStatus = await Permission.locationAlways.status;
-    if (!locationPermissionStatus.isGranted) {
-      debugPrint(
-          "location always permission not granted, requesting permissions...");
-      await requestPermissions();
-    }
-    final notificationPermissionStatus = await Permission.notification.status;
-    if (!notificationPermissionStatus.isGranted) {
-      debugPrint(
-          "notification permission not granted, requesting permissions...");
-      await requestPermissions();
-    }
-    final activityRecognitionPermissionStatus =
-        await Permission.activityRecognition.status;
-    if (!activityRecognitionPermissionStatus.isGranted) {
-      debugPrint(
-          "activity recognition permission not granted, requesting permissions...");
-      await requestPermissions();
-    }
-
-    final granted = await Permission.locationAlways.isGranted;
-    if (!granted) {
-      debugPrint("Location permission is required to start tracking.");
+    if (!_locationPermissionAlwaysGranted) {
       _showSnackbar('Location permission is required to start tracking.');
+      await LocationTracker.openLocationPermissionPage();
+      await refreshPermissions();
+      return;
+    }
+    if (!_notificationPermissionGranted) {
+      _showSnackbar('Notification permission is required to start tracking.');
+      await LocationTracker.requestNotificationPermission();
+      await refreshPermissions();
+      return;
+    }
+    if (!_activityRecognitionPermissionGranted) {
+      _showSnackbar('Activity permission is required to start tracking.');
+      await LocationTracker.requestActivityRecognitionPermission();
+      await refreshPermissions();
       return;
     }
 
     try {
-      await LocationTracker.start();
+      await LocationTracker.start(
+        notificationTitle: "Location tracker example app",
+        notificationContent: "Tracking your location in the background",
+        activityIntervalInMilliseconds: 1000,
+      );
       debugPrint("Location tracking started.");
       _showSnackbar('Location tracking started.');
     } catch (e) {
@@ -89,8 +89,9 @@ class _MyAppState extends State<MyApp> {
     }
   }
 
-  Future<void> _loadLogs() async {
+  Future<void> _refresh() async {
     try {
+      await refreshPermissions();
       final all = await LocationTracker.getLogs();
       setState(() {
         _logs = all.reversed.take(10).toList();
@@ -114,7 +115,7 @@ class _MyAppState extends State<MyApp> {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _loadLogs,
+            onPressed: _refresh,
             tooltip: 'Reload logs',
           )
         ],
@@ -123,6 +124,7 @@ class _MyAppState extends State<MyApp> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            const SizedBox(height: 12),
             ElevatedButton(
               onPressed: _startTracking,
               child: const Text('Start Location Tracking'),
@@ -131,6 +133,21 @@ class _MyAppState extends State<MyApp> {
             ElevatedButton(
               onPressed: _stopTracking,
               child: const Text('Stop Location Tracking'),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Location permission granted: $_locationPermissionAlwaysGranted',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Notification permission granted: $_notificationPermissionGranted',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Activity permission granted: $_activityRecognitionPermissionGranted',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             const Text(

@@ -12,6 +12,7 @@ class ActivityReceiver : BroadcastReceiver() {
 
   override fun onReceive(context: Context, intent: Intent) {
       if (!ActivityRecognitionResult.hasResult(intent)) return
+      println("[ActivityReceiver] start::onReceive()")
       val result = ActivityRecognitionResult.extractResult(intent) ?: return
       val activity = result.mostProbableActivity
       val type = activity.type
@@ -24,6 +25,7 @@ class ActivityReceiver : BroadcastReceiver() {
       prefs.edit().putInt("last_activity", type).apply()
       val restartIntent = Intent("com.example.location_tracker.ACTION_UPDATE_LOCATION_PROFILE")
       context.sendBroadcast(restartIntent)
+      println("[ActivityReceiver] end::onReceive()")
   }
 
 }
