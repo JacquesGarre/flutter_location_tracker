@@ -21,7 +21,7 @@ class MyApp extends StatefulWidget {
   State<MyApp> createState() => _MyAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   List<String> _logs = [];
   bool _locationPermissionAlwaysGranted = false;
   bool _notificationPermissionGranted = false;
@@ -30,13 +30,30 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _refresh();
   }
 
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      refreshPermissions();
+    }
+  }
+
   Future<void> refreshPermissions() async {
-    final locationPermissionAlwaysGranted = await LocationTracker.isLocationPermissionAlwaysGranted();
-    final notificationPermissionGranted = await LocationTracker.isNotificationPermissionGranted();
-    final activityRecognitionPermissionGranted = await LocationTracker.isActivityRecognitionPermissionGranted();
+    final locationPermissionAlwaysGranted =
+        await LocationTracker.isLocationPermissionAlwaysGranted();
+    final notificationPermissionGranted =
+        await LocationTracker.isNotificationPermissionGranted();
+    final activityRecognitionPermissionGranted =
+        await LocationTracker.isActivityRecognitionPermissionGranted();
     setState(() {
       _locationPermissionAlwaysGranted = locationPermissionAlwaysGranted;
       _notificationPermissionGranted = notificationPermissionGranted;
