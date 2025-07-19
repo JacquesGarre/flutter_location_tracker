@@ -26,12 +26,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool _locationPermissionAlwaysGranted = false;
   bool _notificationPermissionGranted = false;
   bool _activityRecognitionPermissionGranted = false;
+  bool _isServiceRunning = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _refresh();
+    _refreshState();
   }
 
   @override
@@ -43,22 +44,26 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      refreshPermissions();
+      _refreshState();
     }
   }
 
-  Future<void> refreshPermissions() async {
+  Future<void> _refreshState() async {
     final locationPermissionAlwaysGranted =
         await LocationTracker.isLocationPermissionAlwaysGranted();
     final notificationPermissionGranted =
         await LocationTracker.isNotificationPermissionGranted();
     final activityRecognitionPermissionGranted =
         await LocationTracker.isActivityRecognitionPermissionGranted();
+    final isServiceRunning = await LocationTracker.isServiceRunning();
+    final logs = await LocationTracker.getLogs();
     setState(() {
       _locationPermissionAlwaysGranted = locationPermissionAlwaysGranted;
       _notificationPermissionGranted = notificationPermissionGranted;
       _activityRecognitionPermissionGranted =
           activityRecognitionPermissionGranted;
+      _isServiceRunning = isServiceRunning;
+      _logs = logs.reversed.take(10).toList();
     });
   }
 
@@ -67,19 +72,19 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     if (!_locationPermissionAlwaysGranted) {
       _showSnackbar('Location permission is required to start tracking.');
       await LocationTracker.openLocationPermissionPage();
-      await refreshPermissions();
+      await _refreshState();
       return;
     }
     if (!_notificationPermissionGranted) {
       _showSnackbar('Notification permission is required to start tracking.');
       await LocationTracker.requestNotificationPermission();
-      await refreshPermissions();
+      await _refreshState();
       return;
     }
     if (!_activityRecognitionPermissionGranted) {
       _showSnackbar('Activity permission is required to start tracking.');
       await LocationTracker.requestActivityRecognitionPermission();
-      await refreshPermissions();
+      await _refreshState();
       return;
     }
 
@@ -89,6 +94,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         notificationContent: "Tracking your location in the background",
         activityIntervalInMilliseconds: 1000,
       );
+      _refreshState();
       debugPrint("Location tracking started.");
       _showSnackbar('Location tracking started.');
     } catch (e) {
@@ -106,18 +112,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _refresh() async {
-    try {
-      await refreshPermissions();
-      final all = await LocationTracker.getLogs();
-      setState(() {
-        _logs = all.reversed.take(10).toList();
-      });
-    } catch (e) {
-      _showSnackbar('Failed to load logs.');
-    }
-  }
-
   void _showSnackbar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message)),
@@ -132,8 +126,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
-            onPressed: _refresh,
-            tooltip: 'Reload logs',
+            onPressed: _refreshState,
+            tooltip: 'Refresh',
           )
         ],
       ),
@@ -150,6 +144,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             ElevatedButton(
               onPressed: _stopTracking,
               child: const Text('Stop Location Tracking'),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Location tracker running: $_isServiceRunning',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),
             Text(

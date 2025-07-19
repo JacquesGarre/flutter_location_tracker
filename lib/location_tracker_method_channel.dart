@@ -58,4 +58,8 @@ class MethodChannelLocationTracker extends LocationTrackerPlatform {
     await methodChannel.invokeMethod<void>('requestActivityRecognitionPermission');
   }
 
+  @override
+  Future<bool> isServiceRunning() async {
+    return await methodChannel.invokeMethod<bool>('isServiceRunning') ?? false;
+  }
 }

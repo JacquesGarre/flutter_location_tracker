@@ -38,6 +38,7 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
       "openLocationPermissionPage" -> openLocationPermissionPage(result)
       "requestNotificationPermission" -> requestNotificationPermission(result)
       "requestActivityRecognitionPermission" -> requestActivityRecognitionPermission(result)
+      "isServiceRunning" -> isServiceRunning(result)
       else -> result.notImplemented()
     }
   }
@@ -137,6 +138,11 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     } ?: run {
         result.error("NO_ACTIVITY", "Activity is not attached", null)
     }
+  }
+
+  private fun isServiceRunning(result: Result) {
+    println("[LocationTrackerPlugin] isServiceRunning()")
+    result.success(LocationService.isRunning)
   }
 
   override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {

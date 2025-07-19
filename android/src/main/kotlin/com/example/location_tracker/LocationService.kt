@@ -33,6 +33,10 @@ class LocationService : Service() {
       }
   }
   private var activityIntervalInMilliseconds: Long = 2000L
+  companion object {
+    @Volatile
+    var isRunning: Boolean = false
+  }
 
   override fun onCreate() {
     println("[LocationService] start::onCreate()")
@@ -42,6 +46,7 @@ class LocationService : Service() {
     initializeLocationClients()
     startActivityUpdates()
     startLocationUpdates()
+    isRunning = true
     println("[LocationService] end::onCreate()")
   }
 
@@ -133,6 +138,7 @@ class LocationService : Service() {
 
   override fun onDestroy() {
     println("[LocationService] start::onDestroy()")
+    isRunning = false
     super.onDestroy()
     fusedClient.removeLocationUpdates(locationCallback)
     handler.removeCallbacks(heartbeatLogger)

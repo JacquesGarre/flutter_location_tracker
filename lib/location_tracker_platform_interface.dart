@@ -37,4 +37,6 @@ abstract class LocationTrackerPlatform extends PlatformInterface {
   Future<void> requestNotificationPermission();
 
   Future<void> requestActivityRecognitionPermission();
+
+  Future<bool> isServiceRunning();
 }

@@ -47,4 +47,8 @@ class LocationTracker {
   static Future<void> requestActivityRecognitionPermission() async {
     await LocationTrackerPlatform.instance.requestActivityRecognitionPermission();
   }
+
+  static Future<bool> isServiceRunning() async {
+    return await LocationTrackerPlatform.instance.isServiceRunning();
+  }
 }
