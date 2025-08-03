@@ -11,21 +11,22 @@ import com.google.android.gms.location.Priority
 class ActivityReceiver : BroadcastReceiver() {
 
   override fun onReceive(context: Context, intent: Intent) {
-      if (!ActivityRecognitionResult.hasResult(intent)) return
-      println("[ActivityReceiver] start::onReceive()")
-      val result = ActivityRecognitionResult.extractResult(intent) ?: return
-      val activity = result.mostProbableActivity
-      val type = activity.type
-      val confidence = activity.confidence
-      Logger.init(context)
+    if (!ActivityRecognitionResult.hasResult(intent)) return
+    var debug = intent?.getBooleanExtra("debug", false) ?: false
+    val result = ActivityRecognitionResult.extractResult(intent) ?: return
+    val activity = result.mostProbableActivity
+    val type = activity.type
+    val confidence = activity.confidence
+    Logger.init(context)
+    if (debug) {
       Logger.logActivity(type, confidence)
-      val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
-      val previous = prefs.getInt("last_activity", -1)
-      if (previous == type) return
-      prefs.edit().putInt("last_activity", type).apply()
-      val restartIntent = Intent("com.example.location_tracker.ACTION_UPDATE_LOCATION_PROFILE")
-      context.sendBroadcast(restartIntent)
-      println("[ActivityReceiver] end::onReceive()")
+    }
+    val prefs = context.getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
+    val previous = prefs.getInt("last_activity", -1)
+    if (previous == type) return
+    prefs.edit().putInt("last_activity", type).apply()
+    val restartIntent = Intent("com.example.location_tracker.ACTION_UPDATE_LOCATION_PROFILE")
+    context.sendBroadcast(restartIntent)
   }
 
 }

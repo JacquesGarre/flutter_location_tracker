@@ -20,6 +20,7 @@ abstract class LocationTrackerPlatform extends PlatformInterface {
     required String notificationTitle,
     required String notificationContent,
     required int activityIntervalInMilliseconds,
+    required bool debug,
   });
 
   Future<void> stopService();
@@ -39,4 +40,6 @@ abstract class LocationTrackerPlatform extends PlatformInterface {
   Future<void> requestActivityRecognitionPermission();
 
   Future<bool> isServiceRunning();
+
+  Future<Map<String, dynamic>> getCurrentLocation();
 }

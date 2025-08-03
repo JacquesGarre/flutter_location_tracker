@@ -32,6 +32,7 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
       "startService" -> startService(call, result)
       "stopService" -> stopService(result)
       "getLogs" -> getLogs(result)
+      "getCurrentLocation" -> getCurrentLocation(result)
       "isLocationPermissionAlwaysGranted" -> isLocationPermissionAlwaysGranted(result)
       "isNotificationPermissionGranted" -> isNotificationPermissionGranted(result)
       "isActivityRecognitionPermissionGranted" -> isActivityRecognitionPermissionGranted(result)
@@ -60,38 +61,36 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun startService(call: MethodCall, result: Result) {
-    println("[LocationTrackerPlugin] start::startService()")
+    println("[LocationTrackerPlugin] STARTING SERVICE...")
     val title = call.argument<String>("notification_title") ?: "Location tracker"
     val content = call.argument<String>("notification_content") ?: "Tracking your location in the background"
     val activityIntervalInMilliseconds = call.argument<Int>("activity_interval_in_milliseconds") ?: 2000
+    val debug = call.argument<Boolean>("debug") ?: false
     val intent = Intent(context, LocationService::class.java).apply {
       putExtra("notification_title", title)
       putExtra("notification_content", content)
       putExtra("activity_interval_in_milliseconds", activityIntervalInMilliseconds)
+      putExtra("debug", debug)
     }
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
       context.startForegroundService(intent)
     } else {
       context.startService(intent)
     }
-    println("[LocationTrackerPlugin] end::startService()")
     result.success(null)
   }
 
   private fun stopService(result: Result) {
-    println("[LocationTrackerPlugin] start::stopService()")
+    println("[LocationTrackerPlugin] STOPPING SERVICE...")
     val intent = Intent(context, LocationService::class.java)
     context.stopService(intent)
-    println("[LocationTrackerPlugin] end::stopService()")
     result.success(null)
   }
 
   private fun getLogs(result: Result) {
-    println("[LocationTrackerPlugin] start::getLogs()")
     try {
       Logger.init(context)
       val jsonLogs = Logger.getLogs()
-      println("[LocationTrackerPlugin] end::getLogs()")
       result.success(jsonLogs)
     } catch (e: Exception) {
       e.printStackTrace()
@@ -99,29 +98,40 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
     }
   }
 
+  private fun getCurrentLocation(result: Result) {
+    try {
+        Logger.init(context)
+        val location = Logger.getCurrentLocation()
+        val json = if (location != null) {
+            mapOf("lat" to location.first, "lng" to location.second)
+        } else {
+            emptyMap()
+        }
+        result.success(json)
+    } catch (e: Exception) {
+        e.printStackTrace()
+        result.success(emptyMap<String, Any>())
+    }
+  }
+
   private fun isLocationPermissionAlwaysGranted(result: Result) {
-    println("[LocationTrackerPlugin] isLocationPermissionAlwaysGranted()")
     result.success(PermissionService.isLocationPermissionAlwaysGranted(context))
   }
 
   private fun isNotificationPermissionGranted(result: Result) {
-    println("[LocationTrackerPlugin] isNotificationPermissionGranted()")
     result.success(PermissionService.isNotificationPermissionGranted(context))
   }
 
   private fun isActivityRecognitionPermissionGranted(result: Result) {
-    println("[LocationTrackerPlugin] isActivityRecognitionPermissionGranted()")
     result.success(PermissionService.isActivityRecognitionPermissionGranted(context))
   }
 
   private fun openLocationPermissionPage(result: Result) {
-    println("[LocationTrackerPlugin] openLocationPermissionPage()")
     PermissionService.openLocationPermissionPage(context)
     result.success(null)
   }
 
   private fun requestNotificationPermission(result: Result) {
-    println("[LocationTrackerPlugin] requestNotificationPermission()")
     activity?.let {
         PermissionService.requestNotificationPermission(it)
         result.success(null)
@@ -131,7 +141,6 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun requestActivityRecognitionPermission(result: Result) {
-    println("[LocationTrackerPlugin] requestActivityRecognitionPermission()")
     activity?.let {
         PermissionService.requestActivityRecognitionPermission(it)
         result.success(null)
@@ -141,7 +150,6 @@ class LocationTrackerPlugin : FlutterPlugin, MethodCallHandler, ActivityAware {
   }
 
   private fun isServiceRunning(result: Result) {
-    println("[LocationTrackerPlugin] isServiceRunning()")
     result.success(LocationService.isRunning)
   }
 

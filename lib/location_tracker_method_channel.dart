@@ -1,3 +1,5 @@
+import 'dart:ffi';
+
 import 'package:flutter/services.dart';
 
 import 'location_tracker_platform_interface.dart';
@@ -10,11 +12,13 @@ class MethodChannelLocationTracker extends LocationTrackerPlatform {
     required String notificationTitle,
     required String notificationContent,
     required int activityIntervalInMilliseconds,
+    required bool debug,
   }) async {
     await methodChannel.invokeMethod('startService', {
       'notification_title': notificationTitle,
       'notification_content': notificationContent,
       'activity_interval_in_milliseconds': activityIntervalInMilliseconds,
+      'debug': debug,
     });
   }
 
@@ -62,4 +66,11 @@ class MethodChannelLocationTracker extends LocationTrackerPlatform {
   Future<bool> isServiceRunning() async {
     return await methodChannel.invokeMethod<bool>('isServiceRunning') ?? false;
   }
+
+  @override
+  Future<Map<String, dynamic>> getCurrentLocation() async {
+    final result = await methodChannel.invokeMethod('getCurrentLocation');
+    return Map<String, dynamic>.from(result);
+  }
+
 }

@@ -9,7 +9,6 @@ object Notification {
 
     fun show(context: Context, title: String, content: String) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-        println("[Notification] start::show()")
         val channelId = "location_channel"
         val channelName = "Location Tracking"
         val notificationManager =
@@ -28,6 +27,6 @@ object Notification {
         if (context is Service) {
             context.startForeground(1, notification)
         }
-        println("[Notification] end::show()")
+        println("[LocationTrackerPlugin] NOTIFICATION DISPLAYED")
     }
 }

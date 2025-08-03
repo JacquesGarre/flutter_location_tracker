@@ -1,5 +1,9 @@
 import 'dart:convert';
 
+import 'package:location_tracker/latitude.dart';
+import 'package:location_tracker/location.dart';
+import 'package:location_tracker/longitude.dart';
+
 import 'location_tracker_platform_interface.dart';
 
 class LocationTracker {
@@ -7,11 +11,14 @@ class LocationTracker {
     required String notificationTitle,
     required String notificationContent,
     required int activityIntervalInMilliseconds,
+    bool debug = false
   }) =>
       LocationTrackerPlatform.instance.startService(
           notificationTitle: notificationTitle,
           notificationContent: notificationContent,
-          activityIntervalInMilliseconds: activityIntervalInMilliseconds);
+          activityIntervalInMilliseconds: activityIntervalInMilliseconds,
+          debug: debug,
+      );
 
   static Future<void> stop() => LocationTrackerPlatform.instance.stopService();
 
@@ -50,5 +57,16 @@ class LocationTracker {
 
   static Future<bool> isServiceRunning() async {
     return await LocationTrackerPlatform.instance.isServiceRunning();
+  }
+
+  static Future<Location> getCurrentLocation() async {
+    final result = await LocationTrackerPlatform.instance.getCurrentLocation();
+    if (result.isEmpty) return Location.defaultLocation();
+    final latValue = (result['lat'] as num).toDouble();
+    final lngValue = (result['lng'] as num).toDouble();
+    return Location.fromLatitudeAndLongitude(
+      Latitude.fromDouble(latValue),
+      Longitude.fromDouble(lngValue), 
+    );
   }
 }

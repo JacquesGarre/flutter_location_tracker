@@ -23,17 +23,17 @@ class ActivityLocationProfile(private val type: Int) {
         DetectedActivity.ON_FOOT,
         DetectedActivity.RUNNING, 
         DetectedActivity.WALKING -> Priority.PRIORITY_HIGH_ACCURACY
-        else -> Priority.PRIORITY_BALANCED_POWER_ACCURACY
+        else -> Priority.PRIORITY_HIGH_ACCURACY
     }
 
     fun intervalInMilliseconds(): Long = when (type) {
         DetectedActivity.STILL -> 100000L
-        else -> 6000L
+        else -> 3000L
     }
 
     fun distanceInMeters(): Float = when (type) {
         DetectedActivity.WALKING -> 10f
         DetectedActivity.STILL -> 100f
-        else -> 20f
+        else -> 10f
     }
 }

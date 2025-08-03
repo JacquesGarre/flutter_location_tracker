@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:location_tracker/location.dart';
 import 'dart:async';
 import 'package:location_tracker/location_tracker.dart';
 
@@ -27,6 +28,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   bool _notificationPermissionGranted = false;
   bool _activityRecognitionPermissionGranted = false;
   bool _isServiceRunning = false;
+  Location _currentLocation = Location.defaultLocation();
 
   @override
   void initState() {
@@ -57,12 +59,14 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         await LocationTracker.isActivityRecognitionPermissionGranted();
     final isServiceRunning = await LocationTracker.isServiceRunning();
     final logs = await LocationTracker.getLogs();
+    final currentLocation = await LocationTracker.getCurrentLocation();
     setState(() {
       _locationPermissionAlwaysGranted = locationPermissionAlwaysGranted;
       _notificationPermissionGranted = notificationPermissionGranted;
       _activityRecognitionPermissionGranted =
           activityRecognitionPermissionGranted;
       _isServiceRunning = isServiceRunning;
+      _currentLocation = currentLocation;
       _logs = logs.reversed.take(10).toList();
     });
   }
@@ -93,6 +97,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         notificationTitle: "Location tracker example app",
         notificationContent: "Tracking your location in the background",
         activityIntervalInMilliseconds: 1000,
+        debug: true, // Because activity recognition does not work in local
       );
       _refreshState();
       debugPrint("Location tracking started.");
@@ -163,6 +168,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             const SizedBox(height: 24),
             Text(
               'Activity permission granted: $_activityRecognitionPermissionGranted',
+              style: const TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Current location: ${_currentLocation.latitude.value}, ${_currentLocation.longitude.value}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 24),

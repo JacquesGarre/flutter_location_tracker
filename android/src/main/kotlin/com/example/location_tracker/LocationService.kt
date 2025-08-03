@@ -27,74 +27,64 @@ class LocationService : Service() {
   private val handler = android.os.Handler(Looper.getMainLooper())
   private val heartbeatLogger = object : Runnable {
       override fun run() {
-        println("[LocationService] Healthcheck")
-        Logger.log("Healthcheck")
+        if (debug) {
+          Logger.log("Healthcheck")
+        }
         handler.postDelayed(this, 120000L)
       }
   }
   private var activityIntervalInMilliseconds: Long = 2000L
+  private var debug: Boolean = false
   companion object {
     @Volatile
     var isRunning: Boolean = false
   }
 
+
   override fun onCreate() {
-    println("[LocationService] start::onCreate()")
     super.onCreate()
     initializeLogger()
-    startHeartbeatLogger()
     initializeLocationClients()
-    startActivityUpdates()
-    startLocationUpdates()
-    isRunning = true
-    println("[LocationService] end::onCreate()")
   }
 
   private fun initializeLogger() {
-    println("[LocationService] start::initializeLogger()")
     Logger.init(this)
-    println("[LocationService] end::initializeLogger()")
   }
 
   private fun startHeartbeatLogger() {
-    println("[LocationService] start::startHeartbeatLogger()")
     handler.post(heartbeatLogger)
-    println("[LocationService] end::startHeartbeatLogger()")
   }
 
   private fun initializeLocationClients() {
-    println("[LocationService] start::initializeLocationClients()")
     fusedClient = LocationServices.getFusedLocationProviderClient(this)
     activityRecognitionClient = ActivityRecognition.getClient(this)
-    println("[LocationService] end::initializeLocationClients()")
   }
 
   override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-      println("[LocationService] start::onStartCommand()")
       activityIntervalInMilliseconds = intent?.getIntExtra("activity_interval_in_milliseconds", 2000)?.toLong() ?: 2000L
+      debug = intent?.getBooleanExtra("debug", false) ?: false
+      println(String.format("[LocationTrackerPlugin] DEBUG MODE ENABLED : %s", debug))
       showNotification(intent)
       registerProfileReceiver()
-      println("[LocationService] end::onStartCommand()")
+      startActivityUpdates()
+      startLocationUpdates()
+      startHeartbeatLogger()
+      isRunning = true
       return START_STICKY
   }
 
   private fun showNotification(intent: Intent?) {
-    println("[LocationService] start::showNotification()")
     val title = intent?.getStringExtra("notification_title") ?: "Location tracker plugin"
     val content = intent?.getStringExtra("notification_content") ?: "Tracking your location"
     Notification.show(this, title, content)
-    println("[LocationService] end::showNotification()")
   }
 
   private fun registerProfileReceiver() {
-    println("[LocationService] start::registerProfileReceiver()")
     val filter = IntentFilter("com.example.location_tracker.ACTION_UPDATE_LOCATION_PROFILE")
     registerReceiver(locationProfileReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-    println("[LocationService] end::registerProfileReceiver()")
   }
 
   private fun startActivityUpdates() {
-    println("[LocationService] start::startActivityUpdates()")
     val intent = Intent(this, ActivityReceiver::class.java)
     val pendingIntent = PendingIntent.getBroadcast(
       this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
@@ -103,47 +93,48 @@ class LocationService : Service() {
       activityIntervalInMilliseconds,
       pendingIntent
     )
-    println("[LocationService] end::startActivityUpdates()")
   }
 
   private fun getConfiguredLocationRequest(): LocationRequest {
-    println("[LocationService] start::getConfiguredLocationRequest()")
     val prefs = getSharedPreferences("location_prefs", Context.MODE_PRIVATE)
-    val activityType = prefs.getInt("last_activity", DetectedActivity.STILL)
+    val activityType = if (debug) {
+        DetectedActivity.ON_FOOT
+    } else {
+        prefs.getInt("last_activity", DetectedActivity.UNKNOWN)
+    }
     val profile = ActivityLocationProfile(activityType)
+    println(String.format("[LocationTrackerPlugin] CURRENT ACTIVITY IS : %s", profile.label()))
     return LocationRequest.Builder(
         profile.priority(),
         profile.intervalInMilliseconds()
     ).setMinUpdateDistanceMeters(profile.distanceInMeters()).build()
-    println("[LocationService] end::getConfiguredLocationRequest()")
   }
 
   private fun startLocationUpdates() {
-    println("[LocationService] start::startLocationUpdates()")
     val request = getConfiguredLocationRequest()
     locationCallback = object : LocationCallback() {
-        override fun onLocationResult(result: LocationResult) {
-            result.locations.forEach { location ->
-                Logger.logLocation(location.latitude, location.longitude)
-            }
+      override fun onLocationResult(result: LocationResult) {
+        result.locations.forEach { location ->
+          Logger.logCurrentLocation(location.latitude, location.longitude)
+          if (debug) {
+            Logger.logLocation(location.latitude, location.longitude)
+          }
         }
+      }
     }
     try {
         fusedClient.requestLocationUpdates(request, locationCallback, Looper.getMainLooper())
     } catch (ex: SecurityException) {
         ex.printStackTrace()
     }
-    println("[LocationService] end::startLocationUpdates()")
   }
 
   override fun onDestroy() {
-    println("[LocationService] start::onDestroy()")
     isRunning = false
     super.onDestroy()
     fusedClient.removeLocationUpdates(locationCallback)
     handler.removeCallbacks(heartbeatLogger)
     unregisterReceiver(locationProfileReceiver)
-    println("[LocationService] end::onDestroy()")
   }
 
   override fun onBind(intent: Intent?): IBinder? = null
